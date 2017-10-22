@@ -92,58 +92,142 @@ ggplot(Prof, aes(timecourse,profile))+geom_line()+ geom_vline(xintercept = timec
 DemoData=read.delim("DemoData.txt")
 
 
-datalist=list.files()
-datalist=paste( "test/",datalist, sep="")
+# datalist=list.files()
+# datalist=paste( "test/",datalist, sep="")
+# 
+# avocado=function(dataFrame){
+#   #To extract mean
+#   Mean=mean(dataFrame$f0)
+# 
+#   #To extract standard deviation
+#   SD=sd(dataFrame$f0)
+# 
+#   #To extract range
+#   Range=range(dataFrame$f0)
+# 
+#   #To extract median
+#   Median=median(dataFrame$f0)
+# 
+#   #To extract iqr
+#   IQr=IQR(dataFrame$f0)
+# 
+#   #To extract mean absolute deviation
+#   AD=aad(dataFrame$f0)
+# 
+#   #To extract coeffecient of variation
+#   COV=sd(dataFrame$f0)/mean(dataFrame$f0)*100
+#  
+#   #Recurrence quantification analysis
+#   par = list(lgM =  50, steps = seq(1, 6, 1),  radiusspan = 100,  radiussample = 40,
+#              normalize = 0,  rescale = 0,  mindiagline = 2,  minvertline = 2,  tw = 0,
+#              whiteline = FALSE,  recpt = FALSE,  fnnpercent = 10,  typeami = "mindip")
+# 
+#   ans= try(optimizeParam(dataFrame$f0, dataFrame$f0,par, min.rec= 3.5, max.rec= 4.5))
+#   if (length(ans)>0){
+#     delay=ans$delay
+#     dimensions=ans$emddim
+#     radius=ans$radius
+#   } else {
+#       delay=NA
+#       dimensions=NA
+#       radius=NA
+#     }
+# 
+#   return(c("mean"=Mean, "sd"=SD, "range"=Range, "median"=Median, "IQR"=IQr, "aad"=AD, "cov"=COV, file="filename", "delay"=delay, "dimensions"=dimensions, "radius"=radius))
+# }
+# 
+# avocado(dataFrame=test)
 
-avocado=function(dataFrame){
-  #To extract mean
-  Mean=mean(dataFrame$f0)
+mean = NULL
+SD = NULL
+range = NULL
+median = NULL
+IQR = NULL
+MAD = NULL
+COV = NULL
+DET = NULL
+n = 1
 
-  #To extract standard deviation
-  SD=sd(dataFrame$f0)
+files=list.files(path = "test", pattern = ".txt")
 
-  #To extract range
-  Range=range(dataFrame$f0)
+for (file in files){
+  d=read.delim(file)
+  mean[n]=mean(d$f0)
+  SD[n]=sd(d$f0)
+  range[n]=range(d$f0)
+  
+  par = list(lgM =  50, steps = seq(1, 6, 1),  radiusspan = 100,
+  radiussample = 40, normalize = 0,  rescale = 0,  mindiagline = 2,
+  minvertline = 2,  tw = 0,  whiteline = FALSE,  recpt = FALSE,
+  fnnpercent = 10,  typeami = "mindip") 
 
-  #To extract median
-  Median=median(dataFrame$f0)
-
-  #To extract iqr
-  IQr=IQR(dataFrame$f0)
-
-  #To extract mean absolute deviation
-  AD=aad(dataFrame$f0)
-
-  #To extract coeffecient of variation
-  COV=sd(dataFrame$f0)/mean(dataFrame$f0)*100
- 
-  #Recurrence quantification analysis
-  par = list(lgM =  50, steps = seq(1, 6, 1),  radiusspan = 100,  radiussample = 40,
-             normalize = 0,  rescale = 0,  mindiagline = 2,  minvertline = 2,  tw = 0,
-             whiteline = FALSE,  recpt = FALSE,  fnnpercent = 10,  typeami = "mindip")
-
-  ans= try(optimizeParam(dataFrame$f0, dataFrame$f0,par, min.rec= 3.5, max.rec= 4.5))
-  if (length(ans)>0){
-    delay=ans$delay
-    dimensions=ans$emddim
-    radius=ans$radius
-  } else {
-      delay=NA
-      dimensions=NA
-      radius=NA
-    }
-
-  return(c("mean"=Mean, "sd"=SD, "range"=Range, "median"=Median, "IQR"=IQr, "aad"=AD, "cov"=COV, file="filename", "delay"=delay, "dimensions"=dimensions, "radius"=radius))
+  ans= try(optimizeParam(d$f0, d$f0, par, min.rec= 3.5,
+                     max.rec=4.5))
+  if (length(ans) > 1) {
+  
+  results=crqa(d$f0, d$f0, delay=ans$delay, embed=ans$emddim,
+               radius=ans$radius,normalize=0,rescale=0,mindiagline = 2,minvertline = 2)
+  
+  DET[n] = results$DET
+  } 
+  
+  else {
+    DET[n] = NA
+  }
+  
+  n=n+1
 }
 
-avocado(dataFrame=test)
+
+print(mean)
+print(SD)
+print(range)
+print(DET)
+print(ans)
+
+tester6=data.frame(mean, SD, range, DET)
+
+for (dataframe in dataframes) {
+  
+  # Mean
+  mean1 = mean(dataframe$f0) 
+  # SD
+  sd1=sd(dataframe$f0)
+  # Range
+  range1=range(dataframe$f0)
+  # median
+  median1=median(dataframe$f0)
+  # IQR
+  IQR1 = IQR(dataframe$f0)
+  # Mean absoluted deviation
+  aad1 = aad(dataframe$f0)
+  # Coefficient of variation
+  cov1 = sd(dataframe$f0)/mean(dataframe$f0)*100
+  
+  # Recurrence Quantificantion Analysis
+  # To estimate paramters (Dimension, Radius and delay parameter)
+  par = list(lgM =  50, steps = seq(1, 6, 1),  radiusspan = 100,
+  radiussample = 40, normalize = 0,  rescale = 0,  mindiagline = 2,
+  minvertline = 2,  tw = 0,  whiteline = FALSE,  recpt = FALSE,
+  fnnpercent = 10,  typeami = "mindip") 
+
+  ans= optimizeParam(dataframe$f0, dataframe$f0, par, min.rec= 3.5,
+                     max.rec=4.5)
+
+  results=crqa(dataframe$f0, dataframe$f0, delay=ans$delay, embed=ans$emddim,
+               radius=ans$radius,normalize=0,rescale=0,mindiagline = 2,minvertline =
+    2)
+  
+  output = matrix(ncol=mean1, sd1, nrow = 2)
+  
+  
+}
+
+output1 = data.frame(output)
 
 ```
 
 
- results = crqa(dataFrame$f0, dataFrame$f0, delay=ans$delay, embed=ans$emddim,
-                 radius=ans$radius,normalize=0,rescale=0,mindiagline = 2,minvertline =
-                   2)
   
 
 3. Make one model per acoustic feature and test whether you can observe significant difference due to Diagnosis. Tip: Which other fixed factors should you control for (that is, include in the model)? Which random ones?
