@@ -151,10 +151,15 @@ n = 1
 files=list.files(path = "test", pattern = ".txt")
 
 for (file in files){
-  d=read.delim(file)
+  d=read.delim(paste0("test/", file))
   mean[n]=mean(d$f0)
   SD[n]=sd(d$f0)
   range[n]=range(d$f0)
+  median[n]=median(d$f0)
+  IQR[n]=IQR(d$f0)
+  MAD[n]=aad(d$f0)
+  COV[n]=sd(d$f0)/mean(d$f0)*100
+  
   
   par = list(lgM =  50, steps = seq(1, 6, 1),  radiusspan = 100,
   radiussample = 40, normalize = 0,  rescale = 0,  mindiagline = 2,
@@ -184,8 +189,15 @@ print(SD)
 print(range)
 print(DET)
 print(ans)
+print(median)
+print(IQR)
+print(MAD)
+print(COV)
 
-tester6=data.frame(mean, SD, range, DET)
+
+tester6=data.frame(mean, SD, range, DET, median, IQR, MAD, COV)
+
+dataframes=c()
 
 for (dataframe in dataframes) {
   
@@ -236,6 +248,7 @@ output1 = data.frame(output)
 
 
 ```{r}
+ArData=read.delim("Articulation.txt", sep=",")
 
 ```
 
