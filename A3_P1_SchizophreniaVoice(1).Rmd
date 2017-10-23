@@ -148,10 +148,10 @@ COV = NULL
 DET = NULL
 n = 1
 
-files=list.files(path = "test", pattern = ".txt")
+files=list.files(path = "Pitch", pattern = ".txt")
 
 for (file in files){
-  d=read.delim(paste0("test/", file))
+  d=read.delim(paste0("Pitch/", file))
   mean[n]=mean(d$f0)
   SD[n]=sd(d$f0)
   range[n]=range(d$f0)
@@ -195,9 +195,8 @@ print(MAD)
 print(COV)
 
 
-tester6=data.frame(mean, SD, range, DET, median, IQR, MAD, COV)
+DataF=data.frame(mean, SD, range, DET, median, IQR, MAD, COV)
 
-dataframes=c()
 
 for (dataframe in dataframes) {
   
