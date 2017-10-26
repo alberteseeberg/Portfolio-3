@@ -93,7 +93,8 @@ ggplot(Prof, aes(timecourse,profile))+geom_line()+ geom_vline(xintercept = timec
 
 DemoData=read.delim("DemoData.txt")
 
-
+#Creating empty variables
+filename = NULL
 mean = NULL
 SD = NULL
 range = NULL
@@ -103,19 +104,22 @@ MAD = NULL
 COV = NULL
 DET = NULL
 maxL = NULL
-RR = NULL
+RR = NULL  #Recurrence rate
 L = NULL
 ENTR = NULL
 rENTR = NULL
 n = 1
 
+#Creating a filelist
 files=list.files(path = "Pitch", pattern = ".txt")
 
+#Creating a loop to run through all files
 for (file in files){
   d=read.delim(paste0("Pitch/", file))
+  filename[n] = files[n]
   mean[n]=mean(d$f0)
   SD[n]=sd(d$f0)
-  range[n]=range(d$f0)
+  range[n]=diff(range(d$f0))
   median[n]=median(d$f0)
   IQR[n]=IQR(d$f0)
   MAD[n]=aad(d$f0)
@@ -169,12 +173,13 @@ print(L)
 print(ENTR)
 print(rENTR)
 
-PitchData=data.frame(mean, SD, range, median, IQR, MAD, COV, DET, RR, L, ENTR, rENTR)
+#Creating a datafram with descriptors of pitch
+PitchData=data.frame(filename, mean, SD, range, median, IQR, MAD, COV, DET, RR, L, ENTR, rENTR)
 
-# To write to a csv file
+#Writing to a csv file
 write.csv(PitchData, "PitchData.csv")
 
-# To create a variable according to the study
+#Creating a variable according to the study
 for (file in 1:nrow(PitchData)){
   if (grepl("Study1", PitchData$filename[file])){
     PitchData$Study[file] = 1}
@@ -184,7 +189,7 @@ for (file in 1:nrow(PitchData)){
     PitchData$Study[file] = 4}
 }
 
-# To create a variable according to diagnosis
+#Creating a variable according to diagnosis
 for (file in 1:nrow(PitchData)){
   if (grepl("D0", PitchData$filename[file])){
     PitchData$Diagnosis[file] = "Control"}
@@ -192,23 +197,26 @@ for (file in 1:nrow(PitchData)){
     PitchData$Diagnosis[file] = "Schizophrenia"}
 }
 
-# To create a variable according to trial
+#Creating a variable according to trial
 PitchData$Trial=regmatches(PitchData$filename, regexpr("[T].*[0-9]", PitchData$filename))
 
 PitchData$Trial = gsub("[T, _, f]", "", PitchData$Trial)
 
 PitchData$Trial=substr(PitchData$Trial, 1, nchar(PitchData$Trial)-1)
 
-# To create a variable according to ID
+#Creating a variable according to ID
 PitchData$Subject = substring(PitchData$filename, 2)
 
 PitchData$Subject=regmatches(PitchData$Subject, regexpr("[S].*[0-9].[T]", PitchData$Subject))
 
 PitchData$Subject = gsub("[A-Z]", "", PitchData$Subject)
 
-# To merge the pitch data together with the demo data
+#Merging the pitch data together with the demo data
 PitchData$Diagnosis=as.factor(PitchData$Diagnosis)
 PitchData$Subject=as.integer(PitchData$Subject)
+
+# To write to a csv file
+write.csv(PitchData, "PitchData.csv")
 
 PitchData = read.csv("PitchData.csv")
 
@@ -217,6 +225,7 @@ NewData = base::merge(PitchData, DemoData, by = c("Subject", "Diagnosis"))
 ArData=read.delim("Articulation.txt", sep=",")
 Pitch_data=read.csv("Pitch_data.csv", sep=",")
 Pitch_data=Pitch_data[-1]
+#Merging the pitchdata with the articulation data and the demo data
 Pitch_data$filename = regmatches(Pitch_data$filename, regexpr("[S].*[_]", Pitch_data$filename))
 Pitch_data$filename=substr(Pitch_data$filename, 1, nchar(Pitch_data$filename)-1)
 ArData=rename(ArData, c("soundname"="filename"))
@@ -224,14 +233,16 @@ ArData=rename(ArData, c("soundname"="filename"))
 NewData=base::merge(Pitch_data, ArData, by = "filename")
 New_data = base::merge(NewData, DemoData, by = c("Subject", "Diagnosis", "Study"))
 
+#Writing the merged data to a csv file
 write.csv(New_data, "AllData.csv")
 
-AllData=read.csv("AllData.csv")
+#Reading my new file
+AllData=read.csv("Schizophrenia_data.csv")
 AllData=AllData[-1]
 
+#Changing the subject for the controls, so both diagnoses don't have same subject number
 for (file in 1:nrow(AllData)){
-  if (grepl("Control", AllData$Diagnosis[file])){
-    AllData$Subject[file] = AllData$Subject[file]*10}
+ if (grepl("Control", AllData$Diagnosis[file])){     AllData$Subject[file] = AllData$Subject[file]/10}
 }
 
 
@@ -247,11 +258,25 @@ for (file in 1:nrow(AllData)){
 
 
 ```{r}
-model1=lmer(npause~Diagnosis+Trial+(1+Trial|Subject)+(1|Study), AllData)
+
+model1=lmer(mean~Diagnosis+Trial+(1+Diagnosis+Trial|Subject)+(1|Study), AllData)
 summary(model1)
 
-model2=lmer(speechrate..nsyll.dur.~Diagnosis+Trial+(1+Trial|Subject)+(1|Study), AllData)
+mode2=lmer(range~Diagnosis+Trial+(1+Diagnosis+Trial|Subject)+(1|Study), AllData)
 summary(model2)
+
+model3=lmer(RR~Diagnosis+Trial+(1+Diagnosis+Trial|Subject)+(1|Study), AllData)
+summary(model3)
+
+model4=lmer(SD~Diagnosis+Trial+(1+Diagnosis+Trial|Subject)+(1|Study), AllData)
+summary(model4)
+
+model5=lmer(median~Diagnosis+Trial+(1+Diagnosis+Trial|Subject)+(1|Study), AllData)
+summary(model5)
+
+
+model8=lmer(mean~Diagnosis*Study+Trial+(1+Diagnosis+Trial|Subject)+, AllData)
+summary(model8)
 ```
 
 4. Bonus Question: Compare effect size of diagnosis across the different measures. Which measure seems most sensitive?
