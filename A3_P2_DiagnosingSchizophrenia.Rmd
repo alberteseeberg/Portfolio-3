@@ -39,10 +39,11 @@ AllData=read.csv("Schizophrenia_data.csv")
 
 AllData=AllData[-1]
 
-for (file in 1:nrow(AllData)){
- if (grepl("Control", AllData$Diagnosis[file])){     AllData$Subject[file] = AllData$Subject[file]/10}
-}
+# for (file in 1:nrow(AllData)){
+#  if (grepl("Control", AllData$Diagnosis[file])){     AllData$Subject[file] = AllData$Subject[file]/10}
+# }
 
+AllData$Subject=as.factor(AllData$Subject)
 
 #Making a generalized linear model
 model1=glmer(Diagnosis~range + (1+Trial|Subject), AllData, family="binomial")
@@ -52,7 +53,7 @@ summary(model1)
 AllData$PredictionsPerc=predict(model1)
 AllData$Predictions[AllData$PredictionsPerc>0.5]="Schizophrenia"
 AllData$Predictions[AllData$PredictionsPerc<=0.5]="Control"
-confusionMatrix(data = AllData$Predictions, reference = AllData$Diagnosis, positive = "Control") 
+c=confusionMatrix(data = AllData$Predictions, reference = AllData$Diagnosis, positive = "Control") 
 
 #Making a reciever operator curve
 rocCurve=roc(response=AllData$Diagnosis, predictor=AllData$PredictionsPerc)
@@ -61,6 +62,42 @@ ci(rocCurve)
 plot(rocCurve, legacy.axes=TRUE)
 
 #Cross-validating model
+
+folds = createFolds(unique(AllData$Subject), 5)
+
+#Create a loop
+
+Accuracy=NULL
+Specificity=NULL
+Sensitivity=NULL
+PPV=NULL
+NPV=NULL
+
+n=1
+
+for (fold in folds){
+  #create a second training dataset 
+  train=subset(AllData,! (Subject %in% fold))
+  
+  #create a second test dataset
+  test=subset(AllData, (Subject %in% fold))
+  
+  #create a model - train
+  TrainModel=glmer(Diagnosis~range + (1+Trial|Subject), train, family="binomial")
+  
+  test$PredictionsPerc=predict(TrainModel, test, allow.new.levels=TRUE)
+  test$Predictions[test$PredictionsPerc>0.5]="Schizophrenia"
+  test$Predictions[test$PredictionsPerc<=0.5]="Control"
+  
+  Specificity[n]= specificity(data = test$Predictions, reference = test$Diagnosis, negative = "Schizophrenia") 
+  Sensitivity[n]= sensitivity(data = test$Predictions, reference = test$Diagnosis, positive = "Control")
+  PPV[n]= posPredValue(data = test$Predictions, reference = test$Diagnosis, positive = "Control")
+  NPV[n]= negPredValue(data = test$Predictions, reference = test$Diagnosis, negative = "Schizophrenia") 
+
+    
+  n=n+1
+ 
+}
 
 
 ```
