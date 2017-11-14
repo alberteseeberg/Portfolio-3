@@ -35,13 +35,9 @@ library(caret)
 library(pROC)
 
 #Reading the data
-AllData=read.csv("Schizophrenia_data.csv")
+AllData=read.csv("AllData.csv")
 
 AllData=AllData[-1]
-
-# for (file in 1:nrow(AllData)){
-#  if (grepl("Control", AllData$Diagnosis[file])){     AllData$Subject[file] = AllData$Subject[file]/10}
-# }
 
 AllData$Subject=as.factor(AllData$Subject)
 
@@ -51,9 +47,10 @@ summary(model1)
 
 #Creating confusion matrix
 AllData$PredictionsPerc=predict(model1)
-AllData$Predictions[AllData$PredictionsPerc>0.5]="Schizophrenia"
-AllData$Predictions[AllData$PredictionsPerc<=0.5]="Control"
-c=confusionMatrix(data = AllData$Predictions, reference = AllData$Diagnosis, positive = "Control") 
+AllData$Predictions[AllData$PredictionsPerc>0]="Schizophrenia"
+AllData$Predictions[AllData$PredictionsPerc<=0]="Control"
+c=confusionMatrix(data = AllData$Predictions, reference = AllData$Diagnosis, positive = "Schizophrenia") 
+
 
 #Making a reciever operator curve
 rocCurve=roc(response=AllData$Diagnosis, predictor=AllData$PredictionsPerc)
@@ -63,42 +60,78 @@ plot(rocCurve, legacy.axes=TRUE)
 
 #Cross-validating model
 
-folds = createFolds(unique(AllData$Subject), 5)
+# Adding fold_value
+fold_function = function(data, col) {
 
-#Create a loop
+  data$folds_ID = as.numeric(interaction(data[,col]))
+  
+  return(data[order(data$folds_ID),])
+}
+
+Data_Schizo = subset(AllData, AllData$Diagnosis == "Schizophrenia")
+Data_Control = subset(AllData, AllData$Diagnosis == "Control")
+
+Data_Schizo=fold_function(Data_Schizo, "Subject")
+Data_Control= fold_function(Data_Control, "Subject")
+
+# Creating folds
+folds_S = createFolds(unique(Data_Schizo$folds_ID), 5)
+folds_C= createFolds(unique(Data_Control$folds_ID), 5)
+
+# Combining data
+fold_list = c()
+fold_list$Fold1 = c(folds_S$Fold1, folds_C$Fold1)
+fold_list$Fold2 = c(folds_S$Fold2, folds_C$Fold2)
+fold_list$Fold3 = c(folds_S$Fold3, folds_C$Fold3)
+fold_list$Fold4 = c(folds_S$Fold4, folds_C$Fold4)
+fold_list$Fold5 = c(folds_S$Fold5, folds_C$Fold5)
+
+NewDATA = rbind(Data_Schizo, Data_Control)
+
+#Creating a loop
 
 Accuracy=NULL
 Specificity=NULL
 Sensitivity=NULL
 PPV=NULL
 NPV=NULL
+AUC=NULL
 
 n=1
 
-for (fold in folds){
-  #create a second training dataset 
-  train=subset(AllData,! (Subject %in% fold))
+for (fold in fold_list){
+  #Creating a second training dataset 
+  train=subset(NewDATA,! (folds_ID %in% fold))
   
-  #create a second test dataset
-  test=subset(AllData, (Subject %in% fold))
+  #Creaing a second test dataset
+  test=subset(NewDATA, (folds_ID %in% fold))
   
-  #create a model - train
+  #Creating a model - train
   TrainModel=glmer(Diagnosis~range + (1+Trial|Subject), train, family="binomial")
   
   test$PredictionsPerc=predict(TrainModel, test, allow.new.levels=TRUE)
-  test$Predictions[test$PredictionsPerc>0.5]="Schizophrenia"
-  test$Predictions[test$PredictionsPerc<=0.5]="Control"
+  test$Predictions[test$PredictionsPerc>0]="Schizophrenia"
+  test$Predictions[test$PredictionsPerc<=0]="Control"
   
-  Specificity[n]= specificity(data = test$Predictions, reference = test$Diagnosis, negative = "Schizophrenia") 
-  Sensitivity[n]= sensitivity(data = test$Predictions, reference = test$Diagnosis, positive = "Control")
-  PPV[n]= posPredValue(data = test$Predictions, reference = test$Diagnosis, positive = "Control")
-  NPV[n]= negPredValue(data = test$Predictions, reference = test$Diagnosis, negative = "Schizophrenia") 
-
+  cm=confusionMatrix(data = test$Predictions, reference = test$Diagnosis, positive = "Schizophrenia") 
+  
+  Accuracy[n]=cm$overall["Accuracy"]
+  
+  test$Predictions=as.factor(test$Predictions)
+  
+  Specificity[n]= specificity(data = test$Predictions, reference = test$Diagnosis, negative = "Control") 
+  Sensitivity[n]= sensitivity(data = test$Predictions, reference = test$Diagnosis, positive = "Schizophrenia")
+  PPV[n]= posPredValue(data = test$Predictions, reference = test$Diagnosis, positive = "Schizophrenia")
+  NPV[n]= negPredValue(data = test$Predictions, reference = test$Diagnosis, negative = "Control") 
+  
+  rocCurve=roc(response=test$Diagnosis, predictor=test$PredictionsPerc)
+  AUC[n]=auc(rocCurve)
     
   n=n+1
  
 }
 
+TestData=data.frame(Accuracy, Specificity, Sensitivity, PPV, NPV, AUC)
 
 ```
 
@@ -108,7 +141,82 @@ Which single predictor is the best predictor of diagnosis?
 
 
 ```{r}
+# Creating a function to find out which single acoustic predictor is the best predictor
+CVfunction = function(data, model) {
 
+# Creating empty variables
+Accuracy = NULL
+Specificity = NULL
+Sensitivity = NULL
+PPV = NULL
+NPV = NULL
+AUC = NULL
+
+n = 1
+
+# Creating a loop
+for (fold in fold_list){
+  
+  # Creating training data set
+  train = subset(data,! (folds_ID %in% fold))  
+  
+  # Creating a test data set
+  test = subset(data, (folds_ID %in% fold)) 
+  
+  # Training model
+  m1=glmer(model, train, family = "binomial")
+  
+  # Evaluating model
+  test$PredictionsPerc=predict(m1, test, allow.new.levels = TRUE) 
+  test$Predictions[test$PredictionsPerc>0]="Schizophrenia" 
+  test$Predictions[test$PredictionsPerc<=0]="Control"
+  
+  cm=confusionMatrix(data = test$Predictions, reference = test$Diagnosis, positive = "Schizophrenia") 
+  
+  Accuracy[n] = cm$overall["Accuracy"]
+  
+  test$Predictions = as.factor(test$Predictions)
+
+  Sensitivity[n] =  sensitivity(data = test$Predictions, reference = test$Diagnosis, positive = "Schizophrenia" )
+  
+  Specificity [n] = specificity(data = test$Predictions, reference = test$Diagnosis, negative = "Control" ) 
+
+  PPV[n] = posPredValue(data = test$Predictions, reference = test$Diagnosis, positive = "Schizophrenia") 
+
+  NPV[n] = negPredValue(data = test$Predictions, reference = test$Diagnosis, negative = "Control")  
+  
+  rocCurve = roc(response = test$Diagnosis,   predictor = test$PredictionsPerc) 
+  AUC[n]=auc(rocCurve) 
+    
+  n=n+1  
+}
+
+results = data.frame(Accuracy, Sensitivity, Specificity, PPV, NPV, AUC)
+
+return(results)
+
+}
+
+MeanResults = CVfunction(NewDATA, Diagnosis ~ mean + (1+Trial|Subject))
+SDresults = CVfunction(NewDATA, Diagnosis ~ SD + (1+Trial|Subject))
+MedianResults = CVfunction(NewDATA, Diagnosis ~ median + (1+Trial|Subject))
+RRresults = CVfunction(NewDATA, Diagnosis ~ RR + (1+Trial|Subject))
+ENTRresults = CVfunction(NewDATA, Diagnosis ~ ENTR + (1+Trial|Subject))
+rENTRresults = CVfunction(NewDATA, Diagnosis ~ rENTR + (1+Trial|Subject))
+
+# Obtaining the mean area under the curve
+mean(SDresults$AUC)
+# 0.61
+mean(MeanResults$AUC) 
+# 0.57
+mean(MedianResults$AUC) 
+# 0.57
+mean(RRresults$AUC)
+# 0.51
+mean(ENTRresults$AUC) 
+# 0.61
+mean(rENTRresults$AUC) 
+# 0.56
 
 ```
 
@@ -117,16 +225,38 @@ Which single predictor is the best predictor of diagnosis?
 Now it's time to go wild! Use all (voice-related) variables and interactions you can think of. Compare models and select the best performing model you can find.
 
 Remember:
-- Cross-validation or AIC are crucial to build the best model!
-- After choosing the model, train it on all the data you have
-- Save the model: save(modelName, file = "BestModelForever.rda")
-- Create a Markdown that can: a) extract the features from new pitch files (basically your previous markdown), b) load your model (e.g. load("BestModelForever.rda")), and c) predict the diagnosis in the new dataframe.
-Send it to Celine and Riccardo by Monday (so they'll have time to run it before class)-
 
+Out-of-sample error crucial to build the best model!
+After choosing the model, send Celine and Riccardo the code of your model
 
 ```{r}
 
-
+M1=CVfunction(NewDATA, Diagnosis ~ mean*range + (1+Trial|Subject))
+M2=CVfunction(NewDATA, Diagnosis ~ SD+ENTR + (1+Trial|Subject))
+M3=CVfunction(NewDATA, Diagnosis ~ SD*ENTR + (1+Trial|Subject))
+M4=CVfunction(NewDATA, Diagnosis ~ range*L + (1+Trial|Subject))
+M5=CVfunction(NewDATA, Diagnosis ~ mean+range + (1+Trial|Subject))
+M6=CVfunction(NewDATA, Diagnosis ~ range+L + (1+Trial|Subject))
+M7=CVfunction(NewDATA, Diagnosis ~ MAD*SD + (1+Trial|Subject))
+M8=CVfunction(NewDATA, Diagnosis ~ MAD+SD + (1+Trial|Subject))
+  
+  
+mean(M1$AUC)
+#0.6098
+mean(M2$AUC)
+#0.6196
+mean(M3$AUC)
+#0.6161
+mean(M4$AUC)
+#0.5815
+mean(M5$AUC)
+#0.6088
+mean(M6$AUC)
+#0.6097
+mean(M7$AUC)
+#0.6387
+mean(M8$AUC)
+#0.5545
 ```
 
 ### Question 4: Report the results
