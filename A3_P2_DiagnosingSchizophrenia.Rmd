@@ -231,6 +231,8 @@ After choosing the model, send Celine and Riccardo the code of your model
 
 ```{r}
 
+#Trying different models
+
 M1=CVfunction(NewDATA, Diagnosis ~ mean*range + (1+Trial|Subject))
 M2=CVfunction(NewDATA, Diagnosis ~ SD+ENTR + (1+Trial|Subject))
 M3=CVfunction(NewDATA, Diagnosis ~ SD*ENTR + (1+Trial|Subject))
@@ -253,7 +255,7 @@ mean(M5$AUC)
 #0.6088
 mean(M6$AUC)
 #0.6097
-mean(M7$AUC)
+mean(M7$AUC) #best model
 #0.6387
 mean(M8$AUC)
 #0.5545
