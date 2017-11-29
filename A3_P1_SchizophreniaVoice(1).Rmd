@@ -179,6 +179,7 @@ PitchData=data.frame(filename, mean, SD, range, median, IQR, MAD, COV, DET, maxL
 #Writing to a csv file
 write.csv(PitchData, "PitchData.csv")
 
+
 #Creating a variable according to the study
 for (file in 1:nrow(PitchData)){
   if (grepl("Study1", PitchData$filename[file])){
@@ -264,6 +265,7 @@ summary(model1)
 
 mode2=lmer(range~Diagnosis+Trial+(1+Diagnosis+Trial|Subject)+(1|Study), AllData)
 summary(model2)
+#Significant
 
 model3=lmer(RR~Diagnosis+Trial+(1+Diagnosis+Trial|Subject)+(1|Study), AllData)
 summary(model3)
@@ -274,18 +276,39 @@ summary(model4)
 model5=lmer(median~Diagnosis+Trial+(1+Diagnosis+Trial|Subject)+(1|Study), AllData)
 summary(model5)
 
+model6=lmer(mean~Diagnosis+Study+ Trial +(1+Diagnosis+Trial|Subject), AllData)
+summary(model6)
+
+model7=lmer(maxL~Diagnosis+Trial+(1+Diagnosis+Trial|Subject)+(1|Study), AllData)
+summary(model7)
 
 model8=lmer(mean~Diagnosis*Study+Trial+(1+Diagnosis+Trial|Subject), AllData)
 summary(model8)
+
+model9=lmer(DET~Diagnosis+Trial+(1+Diagnosis+Trial|Subject)+(1|Study), AllData)
+summary(model9)
+
+model10=lmer(COV~Diagnosis+Trial+(1+Diagnosis+Trial|Subject)+(1|Study), AllData)
+summary(model10)
+#Significant
+
+model11=lmer(IQR~Diagnosis+Trial+(1+Diagnosis+Trial|Subject)+(1|Study), AllData)
+summary(model11)
+#Almost significant
+
+model12=lmer(ENTR~Diagnosis+Trial+(1+Diagnosis+Trial|Subject)+(1|Study), AllData)
+summary(model12)
+
+model13=lmer(L~Diagnosis+Trial+(1+Diagnosis+Trial|Subject)+(1|Study), AllData)
+summary(model13)
+
+model14=lmer(MAD~Diagnosis+Trial+(1+Diagnosis+Trial|Subject)+(1|Study), AllData)
+summary(model14)
+
 ```
 
 4. Bonus Question: Compare effect size of diagnosis across the different measures. Which measure seems most sensitive?
 - Tip: to compare across measures you need to put all of them on the same scale, that is, you need to "standardize" them (z-score)
-
-
-```{r}
-
-```
 
 5. Bonus question. In the Clinical Info file you have additional information about the participants. Which additional parameters (e.g. age, gender) should we control for? Report the effects.
 
