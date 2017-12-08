@@ -255,8 +255,12 @@ mean(M5$AUC)
 #0.6088
 mean(M6$AUC)
 #0.6097
+
 mean(M7$AUC) #best model
 #0.6387
+mean(M7$Accuracy) #best model
+#0.60
+
 mean(M8$AUC)
 #0.5545
 ```

@@ -262,10 +262,10 @@ for (file in 1:nrow(AllData)){
 
 model1=lmer(mean~Diagnosis+Trial+(1+Diagnosis+Trial|Subject)+(1|Study), AllData)
 summary(model1)
+#Significant
 
 mode2=lmer(range~Diagnosis+Trial+(1+Diagnosis+Trial|Subject)+(1|Study), AllData)
 summary(model2)
-#Significant
 
 model3=lmer(RR~Diagnosis+Trial+(1+Diagnosis+Trial|Subject)+(1|Study), AllData)
 summary(model3)
@@ -275,6 +275,7 @@ summary(model4)
 
 model5=lmer(median~Diagnosis+Trial+(1+Diagnosis+Trial|Subject)+(1|Study), AllData)
 summary(model5)
+#significant
 
 model6=lmer(mean~Diagnosis+Study+ Trial +(1+Diagnosis+Trial|Subject), AllData)
 summary(model6)
@@ -287,6 +288,7 @@ summary(model8)
 
 model9=lmer(DET~Diagnosis+Trial+(1+Diagnosis+Trial|Subject)+(1|Study), AllData)
 summary(model9)
+#Significant
 
 model10=lmer(COV~Diagnosis+Trial+(1+Diagnosis+Trial|Subject)+(1|Study), AllData)
 summary(model10)
@@ -298,6 +300,7 @@ summary(model11)
 
 model12=lmer(ENTR~Diagnosis+Trial+(1+Diagnosis+Trial|Subject)+(1|Study), AllData)
 summary(model12)
+#significant
 
 model13=lmer(L~Diagnosis+Trial+(1+Diagnosis+Trial|Subject)+(1|Study), AllData)
 summary(model13)
